@@ -12,11 +12,17 @@ Success Metric: Accuracy score is considered as a success metric since the numbe
 Techniques tried so far:
 
 Bag-of-words: 85% accuracy
+
 Tf-idf : 95% accuracy
+
 Word2vec : 80% accuracy
+
 Fasttext: 96% accuracy
+
 DBOW: 95% accuracy
+
 PV-DM: 90% accuracy
+
 Combination of DBOW & PV-DM: 91% accuracy
 
 
