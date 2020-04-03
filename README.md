@@ -5,7 +5,20 @@ This repository takes an initiative in comparing the effect of different Embeddi
 
 Data used for the purpose of analysis corresponds to news classification dataset from Kaggle. It is a classic text classification problem in which text has to be classified into one of the categories.
 
-The python code is as follows:
+Objective : To predict the class of news based on the news snippet
+
+Success Metric: Accuracy score is considered as a success metric since the number of observations from each class are good in representation.
+
+Techniques tried so far:
+
+Bag-of-words: 85% accuracy
+Tf-idf : 95% accuracy
+Word2vec : 80% accuracy
+Fasttext: 96% accuracy
+DBOW: 95% accuracy
+PV-DM: 90% accuracy
+Combination of DBOW & PV-DM: 91% accuracy
+
 
 
 
