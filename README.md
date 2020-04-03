@@ -7,6 +7,10 @@ Data used for the purpose of analysis corresponds to news classification dataset
 
 Objective : To predict the class of news based on the news snippet
 
+ML Model: Light GBM 
+
+Software: Python3.7
+
 Success Metric: Accuracy score is considered as a success metric since the number of observations from each class are good in representation.
 
 Techniques tried so far:
