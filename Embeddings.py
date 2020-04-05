@@ -194,3 +194,145 @@ pred1 = lgbm.predict(x_test1)
 
 # aaccuracy
 accuracy_score(test['category'], pred1)
+
+###################### TF-idf Approach #######################################################################
+
+tf = TfidfVectorizer()
+
+def str2(x):
+    x1= ''
+    for i in x:
+        x1+= i
+        x1+=' '
+    return(x1)
+
+train['sentences1'] = train.sentences.apply(lambda x: ' '.join(x))
+test['cleaned_text1'] = test.cleaned_text.apply(lambda x: ' '.join(x))
+
+x_train2 = tf.fit_transform(train.sentences1)
+lgbm_tfidf = lightgbm.LGBMClassifier()
+lgbm_tfidf.fit(x_train2, y_train)
+
+x_test2= tf.transform(test.cleaned_text1)
+
+predict2 = lgbm_tfidf.predict(x_test2)
+accuracy_score(test['category'], predict2)
+
+########################## Fasttext ####################################
+
+from gensim.models.fasttext import FastText 
+import pickle as pkl
+#ft_model= FastText(train.sentences)
+
+# =============================================================================
+# with open('ft_model.pkl', 'wb') as f:
+#     pkl.dump(ft_model, f)
+# 
+# =============================================================================
+
+with open('ft_model.pkl', 'rb') as f:
+    ft_model = pkl.load(f)
+
+#ft_model.wv['russia']
+vocab = ft_model.wv.vocab    
+
+def wv_average(ft_model, doc):
+    words =[word for word in doc if word in vocab]
+    
+    return(list(np.mean(ft_model.wv[words], axis = 0)))  
+
+train['wv_ft'] = train.sentences.progress_apply(lambda x: wv_average(ft_model, x))
+wv_cols  = ['wv'+f'{i}' for i in range(len(train.wv_ft.iloc[0]))]
+x_train4 = pd.DataFrame(train.wv_ft.to_list(), columns = wv_cols)
+# train model
+
+lgbm4 = lightgbm.LGBMClassifier( )
+lgbm4.fit(x_train4, y_train)
+
+
+def wv_average(ft_model, doc):
+    words = [word for word in doc]
+    
+    return(list(np.mean(ft_model.wv[words], axis = 0)))
+
+test['wv_ft'] = test.cleaned_text.progress_apply(lambda x: wv_average(ft_model, x))
+
+x_test4 = pd.DataFrame(test.wv_ft.to_list(), columns = wv_cols)
+
+predict4 = lgbm4.predict(x_test4)
+
+accuracy_score(test['category'], predict4)
+
+############################ DBOW #######################
+
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+
+model = Doc2Vec(dm= 0)
+
+train['sentences1'] = [' '.join(i) for i in train['sentences']]
+
+# tag the document
+
+documents = [TaggedDocument(doc, [i]) for i, doc in enumerate(train['sentences'])]
+#doc_train = [documents[doc].words.split(' ') for doc in range(len(documents))]
+model.build_vocab(documents)
+
+# train model
+model.train(documents, total_examples = model.corpus_count, epochs = 30)
+
+x_train5 = [model.docvecs[i] for i in range(train['sentences1'].shape[0]) ]
+
+lgbm5 = lightgbm.LGBMClassifier()
+lgbm5.fit(x_train5,y_train )
+
+# apply it on test data
+#test['cleaned_text1'] = [' '.join(i) for i in test['cleaned_text']]
+documents_test= [TaggedDocument(doc, [i]) for i,doc in enumerate(test['cleaned_text'])]
+#doc_test= [documents_test[doc].words.split(' ') for i in range(len(documents_test))]
+x_test5= [model.infer_vector(documents_test[doc].words, steps= 30) for doc in range(len(documents_test))] 
+
+predict5= lgbm5.predict(x_test5)
+
+#accuracy_score(y_train, lgbm5.predict(x_train))
+
+accuracy_score(test['category'],predict5)
+
+######################### PV-DM #####################################
+
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+
+model1 = Doc2Vec(dm= 1)
+
+document_dm = [TaggedDocument(doc, [i]) for i,doc in enumerate(train['sentences'])]
+
+model1.build_vocab(document_dm)
+
+model1.train(document_dm, total_examples = model1.corpus_count, epochs = 30)
+
+x_train6 = [model1.docvecs[i] for i in range(train['sentences'].shape[0])]
+
+lgbm6= lightgbm.LGBMClassifier()
+
+lgbm6.fit(x_train6, y_train)
+
+document_dm_test= [TaggedDocument(doc, [i]) for i,doc in enumerate(test['cleaned_text'])]
+x_test6 = [model1.infer_vector(document_dm_test[doc].words, steps = 30) for doc in range(len(document_dm_test))]
+
+predict6 = lgbm6.predict(x_test6)
+
+accuracy_score(test['category'], predict6)
+
+####################### Combining DBOW & PV-DM #################################
+
+x_train7 = [model.docvecs[i]+ model1.docvecs[i] for i in range(train['sentences'].shape[0])]
+
+x_test7 = [model.infer_vector(documents_test[doc].words, steps= 30) + model1.infer_vector(document_dm_test[doc].words, steps = 30) for doc in range(len(document_dm_test))]
+
+lgbm7 = lightgbm.LGBMClassifier()
+
+lgbm7.fit(x_train7, y_train)
+
+predict7 = lgbm7.predict(x_test7)
+
+accuracy_score(test['category'], predict7)
+
